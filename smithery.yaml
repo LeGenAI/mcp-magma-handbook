@@ -1,0 +1,144 @@
+# Smithery MCP Server Configuration
+name: mcp-magma-handbook
+version: 1.0.1
+description: "MCP server providing AI access to MAGMA computational algebra system documentation"
+
+# Server metadata
+metadata:
+  title: "MAGMA Handbook MCP Server"
+  author: "Baek Jae Hyun"
+  license: "MIT"
+  homepage: "https://github.com/LeGenAI/mcp-magma-handbook"
+  repository: "https://github.com/LeGenAI/mcp-magma-handbook"
+  
+# Categories and tags
+categories:
+  - mathematics
+  - algebra
+  - documentation
+  - research
+  - computational-algebra
+
+tags:
+  - magma
+  - mathematics
+  - handbook
+  - vector-search
+  - ai
+  - assistant
+  - computational-algebra
+
+# Installation methods
+install:
+  npm:
+    package: "mcp-magma-handbook"
+    global: true
+  
+# Configuration schema
+configuration:
+  type: object
+  properties:
+    openaiApiKey:
+      type: string
+      title: "OpenAI API Key"
+      description: "API key for OpenAI embeddings (text-embedding-3-small)"
+      format: password
+      required: true
+    supabaseUrl:
+      type: string
+      title: "Supabase URL"
+      description: "Your Supabase project URL"
+      format: uri
+      required: true
+    supabaseKey:
+      type: string
+      title: "Supabase Anon Key"
+      description: "Your Supabase anonymous/public key"
+      format: password
+      required: true
+
+# MCP Server configuration template
+mcpServer:
+  command: "npx"
+  args: ["mcp-magma-handbook"]
+  env:
+    OPENAI_API_KEY: "{openaiApiKey}"
+    SUPABASE_URL: "{supabaseUrl}"
+    SUPABASE_KEY: "{supabaseKey}"
+
+# Available tools
+tools:
+  - name: search_magma
+    description: "Search MAGMA handbook for specific topics, functions, or algorithms"
+    parameters:
+      query:
+        type: string
+        description: "Search query"
+        required: true
+      limit:
+        type: number
+        description: "Maximum number of results (default: 5)"
+        default: 5
+      category:
+        type: string
+        enum: ["syntax", "function", "algorithm", "example", "theory", "all"]
+        description: "Filter by category"
+        default: "all"
+        
+  - name: get_magma_example
+    description: "Get MAGMA code examples for specific mathematical topics"
+    parameters:
+      topic:
+        type: string
+        description: "Mathematical topic or function name"
+        required: true
+      complexity:
+        type: string
+        enum: ["basic", "intermediate", "advanced"]
+        description: "Complexity level of examples"
+        default: "basic"
+        
+  - name: explain_magma_code
+    description: "Explain what a piece of MAGMA code does"
+    parameters:
+      code:
+        type: string
+        description: "MAGMA code to explain"
+        required: true
+      context:
+        type: string
+        description: "Additional context (optional)"
+
+# Requirements
+requirements:
+  node: ">=18.0.0"
+  
+# Setup instructions
+setup:
+  steps:
+    - "Install the package: npm install -g mcp-magma-handbook"
+    - "Place your MAGMA handbook PDF in data/pdfs/ directory"
+    - "Set up Supabase database with pgvector extension"
+    - "Run indexing: npm run index"
+    - "Configure Claude Desktop with API keys"
+
+# Examples
+examples:
+  - title: "Basic Search"
+    description: "Search for elliptic curve information"
+    query: "How do I define an elliptic curve in MAGMA?"
+    
+  - title: "Code Examples"
+    description: "Get examples for finite fields"
+    query: "Show me basic examples of working with finite fields"
+    
+  - title: "Code Explanation"
+    description: "Explain MAGMA code"
+    query: "Explain this code: E := EllipticCurve([1, 2]);"
+
+# Performance metrics
+performance:
+  indexed_documents: 8730
+  search_response_time: "< 1 second"
+  embedding_model: "text-embedding-3-small"
+  vector_database: "Supabase pgvector"

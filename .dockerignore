@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Build outputs
+dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Development files
+.git/
+.gitignore
+README.md
+CONTRIBUTING.md
+SMITHERY.md
+
+# Test files
+test-*.js
+tests/
+coverage/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# PDF files (users will add their own)
+data/pdfs/*.pdf
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/

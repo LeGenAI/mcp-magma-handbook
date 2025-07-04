@@ -48,7 +48,7 @@ export class MagmaHandbookServer {
     this.server = new Server(
       {
         name: 'mcp-magma-handbook',
-        version: '0.1.0',
+        version: '1.0.0',
       },
       {
         capabilities: {

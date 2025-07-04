@@ -1,0 +1,62 @@
+{
+  "name": "mcp-magma-handbook",
+  "version": "0.1.0",
+  "description": "MCP server providing AI access to MAGMA computational algebra system documentation",
+  "author": "Baek Jae Hyun",
+  "license": "MIT",
+  "homepage": "https://github.com/LeGenAI/mcp-magma-handbook",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LeGenAI/mcp-magma-handbook.git"
+  },
+  "categories": ["mathematics", "algebra", "documentation", "research"],
+  "keywords": ["magma", "computational-algebra", "mathematics", "handbook", "documentation"],
+  "requirements": {
+    "node": ">=18.0.0",
+    "env": ["OPENAI_API_KEY"]
+  },
+  "installation": {
+    "npm": {
+      "global": true,
+      "package": "mcp-magma-handbook"
+    }
+  },
+  "configuration": {
+    "mcpServers": {
+      "magma-handbook": {
+        "command": "npx",
+        "args": ["mcp-magma-handbook"],
+        "env": {
+          "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+        }
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "search_magma",
+      "description": "Search MAGMA handbook for specific topics, functions, or algorithms",
+      "parameters": {
+        "query": "Search query",
+        "limit": "Max results (optional, default: 5)",
+        "category": "Filter by category: syntax|function|algorithm|example|theory|all"
+      }
+    },
+    {
+      "name": "get_magma_example",
+      "description": "Get MAGMA code examples for specific mathematical topics",
+      "parameters": {
+        "topic": "Mathematical topic or function name",
+        "complexity": "Complexity level: basic|intermediate|advanced"
+      }
+    },
+    {
+      "name": "explain_magma_code",
+      "description": "Explain what a piece of MAGMA code does",
+      "parameters": {
+        "code": "MAGMA code to explain",
+        "context": "Additional context (optional)"
+      }
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "name": "mcp-magma-handbook",
+  "version": "1.0.0",
+  "description": "MCP server providing AI access to MAGMA computational algebra system documentation",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "mcp-magma-handbook": "bin/mcp-magma-handbook"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "index": "tsx src/indexer.ts",
+    "test": "jest",
+    "prepublishOnly": "npm run build",
+    "postinstall": "echo '\n🧙‍♂️ MAGMA Handbook MCP Server installed!\n\n📖 Setup Guide:\n1. Place MAGMA handbook PDF in data/pdfs/\n2. Run: npm run index\n3. Configure Claude Desktop with this server\n\n📚 Documentation: https://github.com/LeGenAI/mcp-magma-handbook\n'"
+  },
+  "keywords": ["mcp", "magma", "computational-algebra", "mathematics", "handbook", "vector-search", "ai", "assistant"],
+  "author": {
+    "name": "Baek Jae Hyun",
+    "email": "baegjaehyeon@gmail.com",
+    "url": "https://github.com/baegjaehyeon"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LeGenAI/mcp-magma-handbook.git"
+  },
+  "homepage": "https://github.com/LeGenAI/mcp-magma-handbook#readme",
+  "bugs": {
+    "url": "https://github.com/LeGenAI/mcp-magma-handbook/issues"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@langchain/community": "^0.3.0",
+    "@langchain/core": "^0.3.0",
+    "@langchain/openai": "^0.3.0",
+    "@supabase/supabase-js": "^2.38.0",
+    "pdf-parse": "^1.1.1",
+    "langchain": "^0.3.0",
+    "zod": "^3.23.0",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pdf-parse": "^1.1.1",
+    "typescript": "^5.5.0",
+    "tsx": "^4.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "bin/",
+    "data/pdfs/README.md",
+    "supabase/",
+    "docs/",
+    "README.md",
+    "manifest.json"
+  ]
+}

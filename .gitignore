@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.local
+data/pdfs/*.pdf
+*.log
+.DS_Store
+chroma/
+.chroma/
+*.swp
+*.swo
+coverage/
+.jest/
+*.tsbuildinfo

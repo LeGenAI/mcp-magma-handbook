@@ -1,0 +1,32 @@
+name: mcp-magma-handbook
+version: 1.0.1
+description: MCP server providing AI access to MAGMA computational algebra system documentation
+
+server:
+  command: npx
+  args: [mcp-magma-handbook]
+  
+env:
+  - OPENAI_API_KEY
+  - SUPABASE_URL
+  - SUPABASE_KEY
+
+tools:
+  search_magma:
+    description: Search MAGMA handbook for specific topics, functions, or algorithms
+    parameters:
+      query: string
+      limit: number
+      category: string
+      
+  get_magma_example:
+    description: Get MAGMA code examples for specific mathematical topics
+    parameters:
+      topic: string
+      complexity: string
+      
+  explain_magma_code:
+    description: Explain what a piece of MAGMA code does
+    parameters:
+      code: string
+      context: string

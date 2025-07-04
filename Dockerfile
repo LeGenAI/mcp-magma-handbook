@@ -1,31 +1,18 @@
-# Use Node.js 18 LTS as base image
 FROM node:18-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
-
-# Install dependencies
 RUN npm ci --only=production
 
-# Copy source code
 COPY . .
-
-# Build the application
 RUN npm run build
 
-# Create data directory for PDFs
 RUN mkdir -p data/pdfs
-
-# Make binary executable
 RUN chmod +x bin/mcp-magma-handbook
 
-# Expose port (if needed for web interface in future)
 EXPOSE 3000
 
-# Set default command
 CMD ["npm", "start"]
 
 # Health check

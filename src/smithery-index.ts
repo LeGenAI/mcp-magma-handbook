@@ -10,9 +10,7 @@ import { OpenAIEmbeddings } from '@langchain/openai';
 
 // Configuration schema for Smithery deployment
 export const configSchema = z.object({
-  supabaseUrl: z.string().optional().describe("Supabase project URL for MAGMA knowledge base"),
-  supabaseKey: z.string().optional().describe("Supabase anon key for database access"),
-  openaiApiKey: z.string().optional().describe("OpenAI API key for embeddings generation"),
+  openaiApiKey: z.string().describe("Your OpenAI API key for embeddings generation (required)"),
   debug: z.boolean().optional().default(false).describe("Enable debug logging"),
 });
 
@@ -36,21 +34,19 @@ export default function createStatelessServer({
     version: "2.0.0",
   });
 
-  // Initialize Supabase and OpenAI with fallback to environment variables
-  const supabaseUrl = config.supabaseUrl || process.env.SUPABASE_URL;
-  const supabaseKey = config.supabaseKey || process.env.SUPABASE_KEY;
+  // Use provided Supabase instance (shared knowledge base)
+  const supabaseUrl = "https://euwbfyrdalddpbnqgjoq.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1d2JmeXJkYWxkZHBibnFnam9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2OTQ4MDIsImV4cCI6MjA0OTI3MDgwMn0.w0DdgZJBwE0xJAJX9bEK5H9Q7UBdTnEAb3IJ9fOULGI";
+  
+  // User provides their own OpenAI API key
   const openaiApiKey = config.openaiApiKey || process.env.OPENAI_API_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
-    console.warn('Supabase configuration missing. Some features may not work.');
-  }
-
   if (!openaiApiKey) {
-    console.warn('OpenAI API key missing. Embedding features may not work.');
+    console.warn('OpenAI API key required. Please configure your API key.');
   }
 
-  // Initialize services if configuration is available
-  const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+  // Initialize services
+  const supabase = createClient(supabaseUrl, supabaseKey);
   const embeddings = openaiApiKey ? new OpenAIEmbeddings({
     modelName: 'text-embedding-3-small',
     dimensions: 1536,
@@ -111,11 +107,11 @@ export default function createStatelessServer({
     },
     async ({ query, limit, category, vectorWeight, bm25Weight }) => {
       try {
-        if (!supabase || !embeddings) {
+        if (!embeddings) {
           return {
             content: [{ 
               type: "text", 
-              text: "❌ Configuration Required\n\nPlease configure the following:\n- supabaseUrl: Your Supabase project URL\n- supabaseKey: Your Supabase anon key\n- openaiApiKey: Your OpenAI API key\n\nThese can be set in the Smithery configuration or as environment variables." 
+              text: "❌ OpenAI API Key Required\n\nPlease configure your OpenAI API key to use this tool.\n\n**Claude Desktop Setup:**\n```json\n{\n  \"mcpServers\": {\n    \"mcp-magma-handbook\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"@smithery/cli@latest\", \"run\", \"@LeGenAI/mcp-magma-handbook\"],\n      \"env\": {\n        \"OPENAI_API_KEY\": \"your-openai-api-key\"\n      }\n    }\n  }\n}\n```\n\n**Note:** Only your OpenAI API key is needed. The MAGMA knowledge base is provided free of charge!" 
             }],
           };
         }
@@ -201,14 +197,6 @@ export default function createStatelessServer({
     },
     async ({ functionName, limit }) => {
       try {
-        if (!supabase) {
-          return {
-            content: [{ 
-              type: "text", 
-              text: "❌ Configuration Required\n\nPlease configure Supabase URL and key to use function search." 
-            }],
-          };
-        }
 
         const { data, error } = await supabase.rpc('search_magma_functions', {
           function_query: functionName,
@@ -289,10 +277,10 @@ MAGMA is a large, well-supported software package designed for computations in a
 4. **magma_info**: This information tool
 
 ## Configuration Required
-To use advanced features, please configure:
-- **supabaseUrl**: Your Supabase project URL
-- **supabaseKey**: Your Supabase anon key  
-- **openaiApiKey**: Your OpenAI API key
+To use search features, you only need:
+- **openaiApiKey**: Your OpenAI API key (for embeddings)
+
+**Note**: The MAGMA knowledge base is provided free of charge!
 
 ## Success Metrics
 - Search quality improved 4x (20% → 84.7% relevance)
@@ -314,11 +302,11 @@ To use advanced features, please configure:
       difficulty: z.enum(['easy', 'medium', 'hard', 'all']).optional().default('all').describe('Difficulty level to test')
     },
     async ({ difficulty }) => {
-      if (!supabase || !embeddings) {
+      if (!embeddings) {
         return {
           content: [{ 
             type: "text", 
-            text: "❌ Configuration Required\n\nPlease configure Supabase and OpenAI credentials to run benchmarks." 
+            text: "❌ OpenAI API Key Required\n\nPlease configure your OpenAI API key to run benchmarks." 
           }],
         };
       }

@@ -11,14 +11,8 @@ tags:
   - search
   - ai-assistant
 config:
-  - name: supabaseUrl
-    description: "Supabase project URL for the MAGMA knowledge base"
-    required: true
-  - name: supabaseKey
-    description: "Supabase anon key for database access"
-    required: true
   - name: openaiApiKey
-    description: "OpenAI API key for embeddings generation"
+    description: "Your OpenAI API key for embeddings generation (you pay for your own usage)"
     required: true
   - name: debug
     description: "Enable debug logging"

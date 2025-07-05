@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "description": "MCP server providing AI access to MAGMA computational algebra system documentation",
   "main": "dist/index.js",
+  "module": "./src/smithery-index.ts",
   "type": "module",
   "bin": {
     "mcp-magma-handbook": "bin/mcp-magma-handbook"

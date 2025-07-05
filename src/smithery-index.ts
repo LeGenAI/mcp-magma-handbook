@@ -31,44 +31,73 @@ export default function createStatelessServer({
 }) {
   const server = new McpServer({
     name: "MAGMA Handbook Advanced",
-    version: "2.0.0",
+    version: "2.1.0",
   });
 
   // Use provided Supabase instance (shared knowledge base)
   const supabaseUrl = "https://euwbfyrdalddpbnqgjoq.supabase.co";
   const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1d2JmeXJkYWxkZHBibnFnam9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2OTQ4MDIsImV4cCI6MjA0OTI3MDgwMn0.w0DdgZJBwE0xJAJX9bEK5H9Q7UBdTnEAb3IJ9fOULGI";
   
-  // User provides their own OpenAI API key
-  const openaiApiKey = config.openaiApiKey || process.env.OPENAI_API_KEY;
-
-  // Debug logging
-  if (config.debug) {
-    console.log('Config debug info:');
-    console.log('- Config openaiApiKey exists:', !!config.openaiApiKey);
-    console.log('- Env OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
-    console.log('- Final openaiApiKey exists:', !!openaiApiKey);
-    if (openaiApiKey) {
-      console.log('- API key starts with sk-:', openaiApiKey.startsWith('sk-'));
-      console.log('- API key length:', openaiApiKey.length);
+  // API key acquisition and validation logic
+  function getValidatedApiKey(): { apiKey: string | null; error: string | null } {
+    // Try API key from multiple sources
+    const sources = [
+      { name: 'config.openaiApiKey', value: config.openaiApiKey },
+      { name: 'OPENAI_API_KEY', value: process.env.OPENAI_API_KEY },
+      { name: 'OPENAI_API_KEY_CONFIG', value: process.env.OPENAI_API_KEY_CONFIG },
+      { name: 'SMITHERY_OPENAI_API_KEY', value: process.env.SMITHERY_OPENAI_API_KEY }
+    ];
+    
+    let apiKey: string | null = null;
+    let source: string | null = null;
+    
+    for (const s of sources) {
+      if (s.value && typeof s.value === 'string' && s.value.trim()) {
+        apiKey = s.value.trim();
+        source = s.name;
+        break;
+      }
     }
+    
+    // API key format validation
+    if (!apiKey) {
+      return { apiKey: null, error: 'No API key found in any source' };
+    }
+    
+    if (!apiKey.startsWith('sk-')) {
+      return { apiKey: null, error: 'Invalid API key format (should start with sk-), source: ' + source };
+    }
+    
+    if (apiKey.length < 20) {
+      return { apiKey: null, error: 'API key too short (' + apiKey.length + ' chars), source: ' + source };
+    }
+    
+    console.log('Valid API key found from ' + source + ' (' + apiKey.length + ' chars)');
+    return { apiKey, error: null };
   }
-
-  if (!openaiApiKey) {
-    console.warn('OpenAI API key required. Please configure your API key.');
+  
+  const { apiKey: openaiApiKey, error: apiKeyError } = getValidatedApiKey();
+  
+  if (apiKeyError) {
+    console.error('API Key Error:', apiKeyError);
   }
 
   // Initialize services
   const supabase = createClient(supabaseUrl, supabaseKey);
-  const embeddings = openaiApiKey ? new OpenAIEmbeddings({
-    modelName: 'text-embedding-3-small',
-    dimensions: 1536,
-    openAIApiKey: openaiApiKey,
-  }) : null;
+  
+  // Separate OpenAI embedding initialization into function
+  function createEmbeddings(apiKey: string): OpenAIEmbeddings {
+    return new OpenAIEmbeddings({
+      modelName: 'text-embedding-3-small',
+      dimensions: 1536,
+      openAIApiKey: apiKey,
+    });
+  }
 
   // Helper function for query expansion
   const expandQuery = (query: string): string => {
     const synonyms: Record<string, string[]> = {
-      // 코딩 이론 확장
+      // Coding theory expansion
       'hamming': ['error', 'correction', 'linear', 'code', 'generator'],
       'reed': ['solomon', 'polynomial', 'evaluation', 'error'],
       'bch': ['cyclic', 'polynomial', 'primitive', 'code'],
@@ -76,17 +105,17 @@ export default function createStatelessServer({
       'generator': ['matrix', 'basis', 'span', 'linear'],
       'matrix': ['linear', 'transformation', 'operator', 'generator'],
       
-      // 군론 확장  
+      // Group theory expansion
       'group': ['algebra', 'structure', 'set', 'permutation', 'symmetric'],
       'permutation': ['symmetric', 'alternating', 'cycle', 'transposition'],
       'sylow': ['subgroup', 'theorem', 'prime', 'power'],
       
-      // 체론 확장
+      // Field theory expansion
       'field': ['ring', 'domain', 'arithmetic', 'finite', 'galois'],
       'finite': ['field', 'galois', 'primitive', 'polynomial'],
       'polynomial': ['expression', 'equation', 'formula', 'irreducible'],
       
-      // 타원곡선 확장
+      // Elliptic curve expansion
       'elliptic': ['curve', 'point', 'addition', 'weierstrass', 'jacobian'],
       'curve': ['elliptic', 'algebraic', 'geometry', 'point', 'rational'],
     };
@@ -119,11 +148,12 @@ export default function createStatelessServer({
     },
     async ({ query, limit, category, vectorWeight, bm25Weight }) => {
       try {
-        if (!embeddings) {
+        // API key validation
+        if (!openaiApiKey) {
           return {
             content: [{ 
               type: "text", 
-              text: "❌ OpenAI API Key Required\n\nPlease configure your OpenAI API key to use this tool.\n\n**Claude Desktop Setup:**\n```json\n{\n  \"mcpServers\": {\n    \"mcp-magma-handbook\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"@smithery/cli@latest\", \"run\", \"@LeGenAI/mcp-magma-handbook\"],\n      \"env\": {\n        \"OPENAI_API_KEY\": \"your-openai-api-key\"\n      }\n    }\n  }\n}\n```\n\n**Note:** Only your OpenAI API key is needed. The MAGMA knowledge base is provided free of charge!" 
+              text: 'OpenAI API Key Required\n\n**Error:** ' + apiKeyError + '\n\n**Setup Instructions:**\n1. Configure your OpenAI API key in Smithery\n2. Or set OPENAI_API_KEY environment variable\n3. Restart your MCP client'
             }],
           };
         }
@@ -131,15 +161,19 @@ export default function createStatelessServer({
         // Expand query with synonyms
         const expandedQuery = expandQuery(query);
         
-        // Generate query embedding
+        // Generate query embedding with proper error handling
         let queryEmbedding;
         try {
+          console.log('Generating embedding for: "' + expandedQuery + '"');
+          const embeddings = createEmbeddings(openaiApiKey);
           queryEmbedding = await embeddings.embedQuery(expandedQuery);
+          console.log('Embedding generated successfully (' + queryEmbedding.length + ' dimensions)');
         } catch (embeddingError: any) {
+          console.error('Embedding Error:', embeddingError);
           return {
             content: [{ 
               type: "text", 
-              text: `❌ OpenAI API Error: ${embeddingError.message}\n\n**Common Issues:**\n- Invalid API key format (should start with 'sk-')\n- Expired or deactivated API key\n- Insufficient API credits\n- Network connectivity issues\n\n**Please check your OpenAI API key configuration.**` 
+              text: 'OpenAI API Error: ' + embeddingError.message + '\n\n**Possible Issues:**\n- Invalid API key: ' + (openaiApiKey?.substring(0, 8) || 'unknown') + '...\n- Expired or deactivated API key\n- Insufficient API credits\n- Network connectivity issues\n- Rate limiting\n\n**Debug Info:**\n- API key length: ' + (openaiApiKey?.length || 0) + '\n- Error type: ' + embeddingError.name + '\n\n**Please verify your OpenAI API key and account status.**'
             }],
           };
         }
@@ -156,7 +190,7 @@ export default function createStatelessServer({
         });
         
         if (error) {
-          throw new Error(`Hybrid search error: ${error.message}`);
+          throw new Error('Hybrid search error: ' + error.message);
         }
 
         const results: SearchResult[] = data.map((row: any) => ({
@@ -170,28 +204,28 @@ export default function createStatelessServer({
 
         if (results.length === 0) {
           return {
-            content: [{ type: "text", text: `No results found for query: "${query}"` }],
+            content: [{ type: "text", text: 'No results found for query: "' + query + '"' }],
           };
         }
 
-        let output = `# Advanced Search Results for "${query}"\n\n`;
-        output += `**Found**: ${results.length} results\n`;
-        output += `**Query Expansion**: ${expandedQuery}\n\n`;
+        let output = '# Advanced Search Results for "' + query + '"\n\n';
+        output += '**Found**: ' + results.length + ' results\n';
+        output += '**Query Expansion**: ' + expandedQuery + '\n\n';
         
         results.forEach((result, index) => {
-          output += `## Result ${index + 1}\n`;
-          output += `**Source**: ${result.metadata.source} (Page ${result.metadata.page})\n`;
-          output += `**Category**: ${result.metadata.category}\n`;
-          output += `**Scores**: Combined ${result.score.toFixed(3)} (Vector: ${result.vectorSimilarity?.toFixed(3)}, BM25: ${result.bm25Score?.toFixed(3)})\n`;
+          output += '## Result ' + (index + 1) + '\n';
+          output += '**Source**: ' + result.metadata.source + ' (Page ' + result.metadata.page + ')\n';
+          output += '**Category**: ' + result.metadata.category + '\n';
+          output += '**Scores**: Combined ' + result.score.toFixed(3) + ' (Vector: ' + (result.vectorSimilarity?.toFixed(3) || 'N/A') + ', BM25: ' + (result.bm25Score?.toFixed(3) || 'N/A') + ')\n';
           
           if (result.metadata.hasCode) {
-            output += `**Contains Code**: ✅\n`;
+            output += '**Contains Code**: Yes\n';
           }
           if (result.metadata.hasExample) {
-            output += `**Contains Examples**: ✅\n`;
+            output += '**Contains Examples**: Yes\n';
           }
           
-          output += `\n${result.content.trim()}\n\n`;
+          output += '\n' + result.content.trim() + '\n\n';
           output += '---\n\n';
         });
 
@@ -202,7 +236,7 @@ export default function createStatelessServer({
         return {
           content: [{ 
             type: "text", 
-            text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` 
+            text: 'Error: ' + (error instanceof Error ? error.message : 'Unknown error')
           }],
         };
       }
@@ -219,7 +253,6 @@ export default function createStatelessServer({
     },
     async ({ functionName, limit }) => {
       try {
-
         const { data, error } = await supabase.rpc('search_magma_functions', {
           function_query: functionName,
           similarity_threshold: 0.3,
@@ -227,32 +260,32 @@ export default function createStatelessServer({
         });
         
         if (error) {
-          throw new Error(`Function search error: ${error.message}`);
+          throw new Error('Function search error: ' + error.message);
         }
 
         if (!data || data.length === 0) {
           return {
-            content: [{ type: "text", text: `No functions found matching: "${functionName}"` }],
+            content: [{ type: "text", text: 'No functions found matching: "' + functionName + '"' }],
           };
         }
 
-        let output = `# Function Search Results for "${functionName}"\n\n`;
-        output += `Found ${data.length} matching functions:\n\n`;
+        let output = '# Function Search Results for "' + functionName + '"\n\n';
+        output += 'Found ' + data.length + ' matching functions:\n\n';
         
         data.forEach((result: any, index: number) => {
-          output += `## ${index + 1}. ${result.function_name}\n`;
-          output += `**Similarity**: ${result.similarity_score.toFixed(3)}\n`;
+          output += '## ' + (index + 1) + '. ' + result.function_name + '\n';
+          output += '**Similarity**: ' + result.similarity_score.toFixed(3) + '\n';
           
           if (result.function_signature) {
-            output += `**Signature**: \`${result.function_signature}\`\n`;
+            output += '**Signature**: `' + result.function_signature + '`\n';
           }
           
           if (result.description) {
-            output += `**Description**: ${result.description}\n`;
+            output += '**Description**: ' + result.description + '\n';
           }
           
           if (result.category) {
-            output += `**Category**: ${result.category}\n`;
+            output += '**Category**: ' + result.category + '\n';
           }
           
           output += '\n';
@@ -265,7 +298,7 @@ export default function createStatelessServer({
         return {
           content: [{ 
             type: "text", 
-            text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` 
+            text: 'Error: ' + (error instanceof Error ? error.message : 'Unknown error')
           }],
         };
       }
@@ -278,31 +311,38 @@ export default function createStatelessServer({
     "Validate your OpenAI API key configuration and test connectivity",
     {},
     async () => {
-      const openaiApiKey = config.openaiApiKey || process.env.OPENAI_API_KEY;
+      const { apiKey: validatedApiKey, error: validationError } = getValidatedApiKey();
       
-      let validationResult = "# 🔑 API Key Validation Results\n\n";
+      let validationResult = "# API Key Validation Results\n\n";
       
-      if (!openaiApiKey) {
-        validationResult += "❌ **No API Key Found**\n";
-        validationResult += "Please configure your OpenAI API key.\n\n";
+      if (!validatedApiKey) {
+        validationResult += "API Key Validation Failed\n";
+        validationResult += "- Error: " + validationError + "\n\n";
+        validationResult += "**Sources Checked:**\n";
+        validationResult += "- config.openaiApiKey: " + !!config.openaiApiKey + "\n";
+        validationResult += "- OPENAI_API_KEY: " + !!process.env.OPENAI_API_KEY + "\n";
+        validationResult += "- OPENAI_API_KEY_CONFIG: " + !!process.env.OPENAI_API_KEY_CONFIG + "\n";
+        validationResult += "- SMITHERY_OPENAI_API_KEY: " + !!process.env.SMITHERY_OPENAI_API_KEY + "\n\n";
       } else {
-        validationResult += "✅ **API Key Found**\n";
-        validationResult += `- Key length: ${openaiApiKey.length} characters\n`;
-        validationResult += `- Starts with 'sk-': ${openaiApiKey.startsWith('sk-') ? '✅' : '❌'}\n`;
-        validationResult += `- Format appears valid: ${openaiApiKey.startsWith('sk-') && openaiApiKey.length > 20 ? '✅' : '❌'}\n\n`;
+        validationResult += "API Key Validated Successfully\n";
+        validationResult += "- Key length: " + validatedApiKey.length + " characters\n";
+        validationResult += "- Starts with 'sk-': Yes\n";
+        validationResult += "- Format valid: Yes\n\n";
         
-        if (embeddings) {
-          try {
-            validationResult += "🧪 **Testing API Connection...**\n";
-            const testEmbedding = await embeddings.embedQuery("test");
-            validationResult += "✅ **API Connection Successful!**\n";
-            validationResult += `- Embedding dimension: ${testEmbedding.length}\n`;
-            validationResult += "- Ready to use search features\n\n";
-          } catch (error: any) {
-            validationResult += "❌ **API Connection Failed**\n";
-            validationResult += `- Error: ${error.message}\n`;
-            validationResult += "- Please check your API key validity and credits\n\n";
-          }
+        // API connection test
+        try {
+          validationResult += "Testing API Connection...\n";
+          const testEmbeddings = createEmbeddings(validatedApiKey);
+          const testEmbedding = await testEmbeddings.embedQuery("test");
+          validationResult += "API Connection Successful!\n";
+          validationResult += "- Embedding dimension: " + testEmbedding.length + "\n";
+          validationResult += "- Ready to use search features\n\n";
+        } catch (error: any) {
+          validationResult += "API Connection Failed\n";
+          validationResult += "- Error: " + error.message + "\n";
+          validationResult += "- Error type: " + error.name + "\n";
+          validationResult += "- API key prefix: " + validatedApiKey.substring(0, 8) + "...\n";
+          validationResult += "- Please check your API key validity and credits\n\n";
         }
       }
       
@@ -312,11 +352,6 @@ export default function createStatelessServer({
       validationResult += "2. Enter your OpenAI API key in the configuration\n";
       validationResult += "3. Copy the generated JSON configuration\n";
       validationResult += "4. Paste into your Claude Desktop or Cursor settings\n\n";
-      validationResult += "### Method 2: Manual Configuration\n";
-      validationResult += "**Claude Desktop Setup:**\n";
-      validationResult += '```json\n{\n  "mcpServers": {\n    "magma-handbook": {\n      "command": "npx",\n      "args": ["-y", "@smithery/cli@latest", "run", "@LeGenAI/mcp-magma-handbook"],\n      "env": {\n        "OPENAI_API_KEY": "sk-your-actual-api-key-here"\n      }\n    }\n  }\n}\n```\n\n';
-      validationResult += "**Cursor Setup:**\n";
-      validationResult += "Add the same configuration to your Cursor MCP settings file.";
       
       return {
         content: [{ type: "text", text: validationResult }],
@@ -333,56 +368,7 @@ export default function createStatelessServer({
       return {
         content: [{ 
           type: "text", 
-          text: `# 🧙‍♂️ MAGMA Handbook Advanced Server v2.0.0
-
-## About MAGMA
-MAGMA is a large, well-supported software package designed for computations in algebra, number theory, algebraic geometry and algebraic combinatorics. It provides a mathematically rigorous environment for defining and working with structures such as groups, rings, fields, modules, algebras, schemes, curves, graphs, designs, codes and many others.
-
-## Server Features
-- **Advanced Hybrid Search**: BM25 + Vector similarity (84.7% average relevance)
-- **Function-Specific Search**: 4441+ MAGMA functions indexed with fuzzy matching
-- **Quality Benchmarking**: Comprehensive testing suite
-- **Query Expansion**: Mathematical domain-specific synonyms
-
-## Available Tools
-1. **search_magma_advanced**: Comprehensive search with hybrid algorithms
-2. **search_functions**: Dedicated MAGMA function lookup
-3. **benchmark_quality**: Performance evaluation tools
-4. **magma_info**: This information tool
-
-## Configuration Required
-To use search features, you only need:
-- **openaiApiKey**: Your OpenAI API key (for embeddings)
-
-**Note**: The MAGMA knowledge base is provided free of charge!
-
-## Setup Instructions
-1. **Configure in Smithery**: Enter your OpenAI API key when installing
-2. **Copy Configuration**: Use the provided JSON with your API key pre-filled
-3. **Paste into Client**: Add to Claude Desktop or Cursor MCP settings
-
-**Example Claude Desktop Configuration:**
-\`\`\`json
-{
-  "mcpServers": {
-    "magma-handbook": {
-      "command": "npx",
-      "args": ["-y", "@smithery/cli@latest", "run", "@LeGenAI/mcp-magma-handbook"],
-      "env": {
-        "OPENAI_API_KEY": "your-api-key-here"
-      }
-    }
-  }
-}
-\`\`\`
-
-## Success Metrics
-- Search quality improved 4x (20% → 84.7% relevance)
-- "Hamming code generator matrix" queries now achieve 80% relevance
-- Ready for 10,000+ users on Smithery marketplace
-
-🚀 **Repository**: https://github.com/LeGenAI/mcp-magma-handbook
-📦 **npm**: mcp-magma-handbook@2.0.0` 
+          text: '# MAGMA Handbook Advanced Server v2.1.0\n\n## About MAGMA\nMAGMA is a large, well-supported software package designed for computations in algebra, number theory, algebraic geometry and algebraic combinatorics.\n\n## Server Features\n- Advanced Hybrid Search: BM25 + Vector similarity (84.7% average relevance)\n- Function-Specific Search: 4441+ MAGMA functions indexed with fuzzy matching\n- Quality Benchmarking: Comprehensive testing suite\n- Query Expansion: Mathematical domain-specific synonyms\n\n## Available Tools\n1. **search_magma_advanced**: Comprehensive search with hybrid algorithms\n2. **search_functions**: Dedicated MAGMA function lookup\n3. **validate_api_key**: API key validation and testing\n4. **magma_info**: This information tool\n\n## Configuration Required\nTo use search features, you only need:\n- **openaiApiKey**: Your OpenAI API key (for embeddings)\n\n**Note**: The MAGMA knowledge base is provided free of charge!'
         }],
       };
     }
@@ -396,11 +382,11 @@ To use search features, you only need:
       difficulty: z.enum(['easy', 'medium', 'hard', 'all']).optional().default('all').describe('Difficulty level to test')
     },
     async ({ difficulty }) => {
-      if (!embeddings) {
+      if (!openaiApiKey) {
         return {
           content: [{ 
             type: "text", 
-            text: "❌ OpenAI API Key Required\n\nPlease configure your OpenAI API key to run benchmarks." 
+            text: 'OpenAI API Key Required\n\n**Error:** ' + apiKeyError + '\n\nPlease configure your OpenAI API key to run benchmarks.'
           }],
         };
       }
@@ -419,7 +405,7 @@ To use search features, you only need:
       ].filter(q => difficulty === 'all' || q.difficulty === difficulty);
 
       let output = "# MAGMA Knowledge Base Quality Benchmark\n\n";
-      output += `Testing ${testQueries.length} queries (difficulty: ${difficulty})\n\n`;
+      output += "Testing " + testQueries.length + " queries (difficulty: " + difficulty + ")\n\n";
 
       let totalScore = 0;
       let totalTime = 0;
@@ -428,7 +414,8 @@ To use search features, you only need:
         const startTime = Date.now();
         
         try {
-          const queryEmbedding = await embeddings.embedQuery(testQuery.query);
+          const testEmbeddings = createEmbeddings(openaiApiKey);
+          const queryEmbedding = await testEmbeddings.embedQuery(testQuery.query);
           const { data } = await supabase.rpc('search_magma_hybrid', {
             query_text: testQuery.query,
             query_embedding: queryEmbedding,
@@ -446,19 +433,19 @@ To use search features, you only need:
           totalScore += relevanceScore;
           totalTime += responseTime;
 
-          output += `[${index + 1}/${testQueries.length}] "${testQuery.query}" (${testQuery.difficulty})\n`;
-          output += `   Relevance: ${(relevanceScore * 100).toFixed(0)}% | Speed: ${responseTime}ms | Results: ${resultCount}\n\n`;
+          output += '[' + (index + 1) + '/' + testQueries.length + '] "' + testQuery.query + '" (' + testQuery.difficulty + ')\n';
+          output += '   Relevance: ' + (relevanceScore * 100).toFixed(0) + '% | Speed: ' + responseTime + 'ms | Results: ' + resultCount + '\n\n';
         } catch (error) {
-          output += `[${index + 1}/${testQueries.length}] "${testQuery.query}" - ERROR: ${error}\n\n`;
+          output += '[' + (index + 1) + '/' + testQueries.length + '] "' + testQuery.query + '" - ERROR: ' + error + '\n\n';
         }
       }
 
       const avgScore = (totalScore / testQueries.length) * 100;
       const avgTime = totalTime / testQueries.length;
 
-      output += `## Summary\n`;
-      output += `Average Relevance: ${avgScore.toFixed(1)}%\n`;
-      output += `Average Response Time: ${avgTime.toFixed(0)}ms\n`;
+      output += '## Summary\n';
+      output += 'Average Relevance: ' + avgScore.toFixed(1) + '%\n';
+      output += 'Average Response Time: ' + avgTime.toFixed(0) + 'ms\n';
 
       return {
         content: [{ type: "text", text: output }],

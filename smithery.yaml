@@ -1,7 +1,7 @@
 runtime: typescript
 name: "MAGMA Handbook Advanced"
 description: "Advanced MCP server providing AI access to MAGMA computational algebra system documentation with hybrid search capabilities"
-version: "2.0.0"
+version: "2.1.0"
 author: "Baek Jae Hyun"
 homepage: "https://github.com/LeGenAI/mcp-magma-handbook"
 tags:
@@ -18,14 +18,23 @@ config:
   - name: debug
     description: "Enable debug logging"
     required: false
-    default: false
+    default: true
 examples:
   claude-desktop: |
     {
       "mcpServers": {
         "magma-handbook": {
           "command": "npx",
-          "args": ["-y", "@smithery/cli@latest", "run", "@LeGenAI/mcp-magma-handbook"],
+          "args": [
+            "-y", 
+            "@smithery/cli@latest", 
+            "run", 
+            "@LeGenAI/mcp-magma-handbook",
+            "--key",
+            "{{smitheryApiKey}}",
+            "--profile",
+            "{{profileId}}"
+          ],
           "env": {
             "OPENAI_API_KEY": "{{openaiApiKey}}"
           }
@@ -37,7 +46,16 @@ examples:
       "mcpServers": {
         "magma-handbook": {
           "command": "npx", 
-          "args": ["-y", "@smithery/cli@latest", "run", "@LeGenAI/mcp-magma-handbook"],
+          "args": [
+            "-y", 
+            "@smithery/cli@latest", 
+            "run", 
+            "@LeGenAI/mcp-magma-handbook",
+            "--key",
+            "{{smitheryApiKey}}",
+            "--profile", 
+            "{{profileId}}"
+          ],
           "env": {
             "OPENAI_API_KEY": "{{openaiApiKey}}"
           }

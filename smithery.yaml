@@ -14,7 +14,33 @@ config:
   - name: openaiApiKey
     description: "Your OpenAI API key for embeddings generation (you pay for your own usage)"
     required: true
+    env: true
   - name: debug
     description: "Enable debug logging"
     required: false
     default: false
+examples:
+  claude-desktop: |
+    {
+      "mcpServers": {
+        "magma-handbook": {
+          "command": "npx",
+          "args": ["-y", "@smithery/cli@latest", "run", "@LeGenAI/mcp-magma-handbook"],
+          "env": {
+            "OPENAI_API_KEY": "{{openaiApiKey}}"
+          }
+        }
+      }
+    }
+  cursor: |
+    {
+      "mcpServers": {
+        "magma-handbook": {
+          "command": "npx", 
+          "args": ["-y", "@smithery/cli@latest", "run", "@LeGenAI/mcp-magma-handbook"],
+          "env": {
+            "OPENAI_API_KEY": "{{openaiApiKey}}"
+          }
+        }
+      }
+    }

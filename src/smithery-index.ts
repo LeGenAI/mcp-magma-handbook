@@ -307,8 +307,16 @@ export default function createStatelessServer({
       }
       
       validationResult += "## Configuration Guide\n\n";
+      validationResult += "### Method 1: Via Smithery Website\n";
+      validationResult += "1. Go to https://smithery.ai/@LeGenAI/mcp-magma-handbook\n";
+      validationResult += "2. Enter your OpenAI API key in the configuration\n";
+      validationResult += "3. Copy the generated JSON configuration\n";
+      validationResult += "4. Paste into your Claude Desktop or Cursor settings\n\n";
+      validationResult += "### Method 2: Manual Configuration\n";
       validationResult += "**Claude Desktop Setup:**\n";
-      validationResult += '```json\n{\n  "mcpServers": {\n    "mcp-magma-handbook": {\n      "env": {\n        "OPENAI_API_KEY": "sk-your-actual-api-key-here"\n      }\n    }\n  }\n}\n```';
+      validationResult += '```json\n{\n  "mcpServers": {\n    "magma-handbook": {\n      "command": "npx",\n      "args": ["-y", "@smithery/cli@latest", "run", "@LeGenAI/mcp-magma-handbook"],\n      "env": {\n        "OPENAI_API_KEY": "sk-your-actual-api-key-here"\n      }\n    }\n  }\n}\n```\n\n';
+      validationResult += "**Cursor Setup:**\n";
+      validationResult += "Add the same configuration to your Cursor MCP settings file.";
       
       return {
         content: [{ type: "text", text: validationResult }],
@@ -347,6 +355,26 @@ To use search features, you only need:
 - **openaiApiKey**: Your OpenAI API key (for embeddings)
 
 **Note**: The MAGMA knowledge base is provided free of charge!
+
+## Setup Instructions
+1. **Configure in Smithery**: Enter your OpenAI API key when installing
+2. **Copy Configuration**: Use the provided JSON with your API key pre-filled
+3. **Paste into Client**: Add to Claude Desktop or Cursor MCP settings
+
+**Example Claude Desktop Configuration:**
+\`\`\`json
+{
+  "mcpServers": {
+    "magma-handbook": {
+      "command": "npx",
+      "args": ["-y", "@smithery/cli@latest", "run", "@LeGenAI/mcp-magma-handbook"],
+      "env": {
+        "OPENAI_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+\`\`\`
 
 ## Success Metrics
 - Search quality improved 4x (20% → 84.7% relevance)

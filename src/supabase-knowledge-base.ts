@@ -42,20 +42,23 @@ export class SupabaseMagmaKnowledgeBase {
 
     this.supabase = createClient(supabaseUrl, supabaseKey);
     this.embeddings = new OpenAIEmbeddings({
-      modelName: 'text-embedding-3-small',
+      modelName: 'text-embedding-3-large', // 더 정확한 모델
+      dimensions: 3072, // 고차원 임베딩
     });
     
     // MAGMA 코드에 최적화된 텍스트 분할기
     this.textSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 1500,
-      chunkOverlap: 200,
+      chunkSize: 2000, // 더 큰 청크로 맥락 보존
+      chunkOverlap: 400, // 더 많은 오버랩
       separators: [
-        '\n\n\n', // 섹션 구분
-        '\n\n',   // 단락 구분
-        '\n',     // 줄 구분
-        ';',      // MAGMA 문장 종료
-        '.',      // 일반 문장
-        ' ',      // 공백
+        '\n\n\n\n', // 챕터 구분
+        '\n\n\n',   // 섹션 구분  
+        '\n\n',     // 단락 구분
+        '\n>',      // MAGMA 명령 시작
+        ';',        // MAGMA 문장 종료
+        '\n',       // 줄 구분
+        '.',        // 일반 문장
+        ' ',        // 공백
         ''
       ],
     });
@@ -148,16 +151,42 @@ export class SupabaseMagmaKnowledgeBase {
   private categorizeContent(content: string): string {
     const lowerContent = content.toLowerCase();
     
-    // MAGMA 특화 카테고리 분류
-    if (lowerContent.includes('syntax') || lowerContent.includes('::=')) {
-      return 'syntax';
-    } else if (lowerContent.includes('function') || lowerContent.includes('intrinsic')) {
+    // MAGMA 함수 패턴 감지
+    const functionPatterns = [
+      /^[A-Z][a-zA-Z]*\s*\(/m, // 함수 시그니처
+      /intrinsic\s+[A-Z]/i,    // intrinsic 선언
+      /procedure\s+[A-Z]/i,    // procedure 선언
+      /function\s+[A-Z]/i      // function 선언
+    ];
+    
+    // 예제 패턴 감지  
+    const examplePatterns = [
+      /example\s+h\d+e\d+/i,   // Example H120E1 패턴
+      /^>\s+/m,                // MAGMA 명령 프롬프트
+      /^> [A-Z]/m              // MAGMA 명령
+    ];
+    
+    // 함수 검사
+    if (functionPatterns.some(pattern => pattern.test(content))) {
       return 'function';
-    } else if (lowerContent.includes('algorithm') || lowerContent.includes('procedure')) {
-      return 'algorithm';
-    } else if (lowerContent.includes('example') || content.includes('>')) {
+    }
+    
+    // 예제 검사
+    if (examplePatterns.some(pattern => pattern.test(content))) {
       return 'example';
-    } else if (lowerContent.includes('theorem') || lowerContent.includes('lemma')) {
+    }
+    
+    // 키워드 기반 분류
+    if (lowerContent.includes('syntax') || lowerContent.includes('::=') || 
+        lowerContent.includes('grammar')) {
+      return 'syntax';
+    } else if (lowerContent.includes('algorithm') || 
+               lowerContent.includes('procedure') || 
+               lowerContent.includes('method')) {
+      return 'algorithm';
+    } else if (lowerContent.includes('theorem') || 
+               lowerContent.includes('lemma') || 
+               lowerContent.includes('proposition')) {
       return 'theory';
     }
     
@@ -172,11 +201,11 @@ export class SupabaseMagmaKnowledgeBase {
     // 쿼리 임베딩 생성
     const queryEmbedding = await this.embeddings.embedQuery(query);
     
-    // Supabase 벡터 검색
+    // Supabase 벡터 검색 (더 높은 품질 임계값)
     let rpcQuery = this.supabase.rpc('search_magma_documents', {
       query_embedding: queryEmbedding,
-      similarity_threshold: 0.3,
-      match_count: limit
+      similarity_threshold: 0.4, // 더 엄격한 임계값
+      match_count: limit * 2 // 더 많이 가져와서 필터링
     });
 
     // 카테고리 필터링

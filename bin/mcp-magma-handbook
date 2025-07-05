@@ -7,8 +7,19 @@ import { spawn } from 'child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Run the compiled server
-const serverPath = join(__dirname, '..', 'dist', 'index.js');
+// Check for advanced mode flag
+const useAdvanced = process.argv.includes('--advanced') || process.argv.includes('--v2');
+
+// Choose server version
+const serverFile = useAdvanced ? 'advanced-index.js' : 'index.js';
+const serverPath = join(__dirname, '..', 'dist', serverFile);
+
+if (useAdvanced) {
+  console.error('🚀 Starting Advanced MAGMA Handbook MCP Server v2.0');
+} else {
+  console.error('🧙‍♂️ Starting MAGMA Handbook MCP Server v1.0 (use --advanced for v2.0)');
+}
+
 const child = spawn('node', [serverPath], {
   stdio: 'inherit',
   cwd: process.cwd()

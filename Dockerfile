@@ -1,28 +1,18 @@
-FROM node:18-alpine
+FROM node:22-slim
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci --only=production
-
+# Copy all files first for Smithery build process
 COPY . .
-RUN npm run build
 
-RUN mkdir -p data/pdfs
-RUN chmod +x bin/mcp-magma-handbook
+# Install dependencies (if package.json exists)
+RUN if [ -f package.json ]; then npm ci; fi
 
-EXPOSE 3000
+# Build the Smithery MCP server using their CLI
+RUN npx -y @smithery/cli@1.2.9 build -o .smithery/index.cjs
 
-CMD ["npm", "start"]
+# Expose port for Smithery
+EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "console.log('Health check passed')" || exit 1
-
-# Labels for metadata
-LABEL org.opencontainers.image.title="MCP MAGMA Handbook Server"
-LABEL org.opencontainers.image.description="MCP server providing AI access to MAGMA computational algebra system documentation"
-LABEL org.opencontainers.image.url="https://github.com/LeGenAI/mcp-magma-handbook"
-LABEL org.opencontainers.image.source="https://github.com/LeGenAI/mcp-magma-handbook"
-LABEL org.opencontainers.image.version="1.0.1"
-LABEL org.opencontainers.image.licenses="MIT"
+# Start the built Smithery server
+CMD ["node", ".smithery/index.cjs"]

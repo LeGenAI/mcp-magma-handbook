@@ -32,6 +32,7 @@ export class MagmaKnowledgeBase {
     this.client = new ChromaClient();
     this.embeddings = new OpenAIEmbeddings({
       modelName: 'text-embedding-3-small',
+      dimensions: 1536, // Advanced와 동일한 차원
     });
     
     // MAGMA 코드에 최적화된 텍스트 분할기

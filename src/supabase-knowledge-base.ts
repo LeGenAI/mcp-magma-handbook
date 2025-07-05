@@ -42,8 +42,8 @@ export class SupabaseMagmaKnowledgeBase {
 
     this.supabase = createClient(supabaseUrl, supabaseKey);
     this.embeddings = new OpenAIEmbeddings({
-      modelName: 'text-embedding-3-large', // 더 정확한 모델
-      dimensions: 3072, // 고차원 임베딩
+      modelName: 'text-embedding-3-small', // Advanced와 동일한 모델
+      dimensions: 1536, // Advanced와 동일한 차원
     });
     
     // MAGMA 코드에 최적화된 텍스트 분할기

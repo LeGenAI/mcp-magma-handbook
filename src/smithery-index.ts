@@ -41,6 +41,18 @@ export default function createStatelessServer({
   // User provides their own OpenAI API key
   const openaiApiKey = config.openaiApiKey || process.env.OPENAI_API_KEY;
 
+  // Debug logging
+  if (config.debug) {
+    console.log('Config debug info:');
+    console.log('- Config openaiApiKey exists:', !!config.openaiApiKey);
+    console.log('- Env OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
+    console.log('- Final openaiApiKey exists:', !!openaiApiKey);
+    if (openaiApiKey) {
+      console.log('- API key starts with sk-:', openaiApiKey.startsWith('sk-'));
+      console.log('- API key length:', openaiApiKey.length);
+    }
+  }
+
   if (!openaiApiKey) {
     console.warn('OpenAI API key required. Please configure your API key.');
   }
@@ -120,7 +132,17 @@ export default function createStatelessServer({
         const expandedQuery = expandQuery(query);
         
         // Generate query embedding
-        const queryEmbedding = await embeddings.embedQuery(expandedQuery);
+        let queryEmbedding;
+        try {
+          queryEmbedding = await embeddings.embedQuery(expandedQuery);
+        } catch (embeddingError: any) {
+          return {
+            content: [{ 
+              type: "text", 
+              text: `❌ OpenAI API Error: ${embeddingError.message}\n\n**Common Issues:**\n- Invalid API key format (should start with 'sk-')\n- Expired or deactivated API key\n- Insufficient API credits\n- Network connectivity issues\n\n**Please check your OpenAI API key configuration.**` 
+            }],
+          };
+        }
         
         // Call hybrid search function
         const { data, error } = await supabase.rpc('search_magma_hybrid', {
@@ -247,6 +269,50 @@ export default function createStatelessServer({
           }],
         };
       }
+    }
+  );
+
+  // API key validation tool
+  server.tool(
+    "validate_api_key",
+    "Validate your OpenAI API key configuration and test connectivity",
+    {},
+    async () => {
+      const openaiApiKey = config.openaiApiKey || process.env.OPENAI_API_KEY;
+      
+      let validationResult = "# 🔑 API Key Validation Results\n\n";
+      
+      if (!openaiApiKey) {
+        validationResult += "❌ **No API Key Found**\n";
+        validationResult += "Please configure your OpenAI API key.\n\n";
+      } else {
+        validationResult += "✅ **API Key Found**\n";
+        validationResult += `- Key length: ${openaiApiKey.length} characters\n`;
+        validationResult += `- Starts with 'sk-': ${openaiApiKey.startsWith('sk-') ? '✅' : '❌'}\n`;
+        validationResult += `- Format appears valid: ${openaiApiKey.startsWith('sk-') && openaiApiKey.length > 20 ? '✅' : '❌'}\n\n`;
+        
+        if (embeddings) {
+          try {
+            validationResult += "🧪 **Testing API Connection...**\n";
+            const testEmbedding = await embeddings.embedQuery("test");
+            validationResult += "✅ **API Connection Successful!**\n";
+            validationResult += `- Embedding dimension: ${testEmbedding.length}\n`;
+            validationResult += "- Ready to use search features\n\n";
+          } catch (error: any) {
+            validationResult += "❌ **API Connection Failed**\n";
+            validationResult += `- Error: ${error.message}\n`;
+            validationResult += "- Please check your API key validity and credits\n\n";
+          }
+        }
+      }
+      
+      validationResult += "## Configuration Guide\n\n";
+      validationResult += "**Claude Desktop Setup:**\n";
+      validationResult += '```json\n{\n  "mcpServers": {\n    "mcp-magma-handbook": {\n      "env": {\n        "OPENAI_API_KEY": "sk-your-actual-api-key-here"\n      }\n    }\n  }\n}\n```';
+      
+      return {
+        content: [{ type: "text", text: validationResult }],
+      };
     }
   );
 

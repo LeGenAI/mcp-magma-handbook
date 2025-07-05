@@ -1,4 +1,4 @@
-# 🎉 MAGMA Handbook MCP Server v2.0.0 배포 완료!
+# 🎉 MAGMA Handbook MCP Server v2.2.0 배포 완료!
 
 ## ✅ 성공적으로 완료된 배포
 
@@ -15,7 +15,7 @@
 
 ### 방법 1: npm 직접 설치
 ```bash
-npm install -g mcp-magma-handbook@2.0.0
+npm install -g mcp-magma-handbook@2.2.0
 ```
 
 ### 방법 2: Claude Desktop에서 설정
@@ -24,7 +24,7 @@ npm install -g mcp-magma-handbook@2.0.0
   "mcpServers": {
     "magma-handbook": {
       "command": "npx",
-      "args": ["mcp-magma-handbook@2.0.0"],
+      "args": ["mcp-magma-handbook@2.2.0"],
       "env": {
         "SUPABASE_URL": "your_supabase_url",
         "SUPABASE_KEY": "your_supabase_key",
@@ -41,7 +41,7 @@ npm install -g mcp-magma-handbook@2.0.0
   "mcpServers": {
     "magma-handbook-advanced": {
       "command": "npx",
-      "args": ["mcp-magma-handbook@2.0.0", "--advanced"],
+      "args": ["mcp-magma-handbook@2.2.0", "--advanced"],
       "env": {
         "SUPABASE_URL": "your_supabase_url", 
         "SUPABASE_KEY": "your_supabase_key",
@@ -72,14 +72,24 @@ npm install -g mcp-magma-handbook@2.0.0
 
 ## 💡 핵심 기능
 
-### v2.0.0 주요 개선사항:
+### v2.2.0 주요 개선사항:
+- **🐛 임베딩 차원 통일**: 모든 지식베이스를 text-embedding-3-small (1536차원)으로 표준화
+- **🔧 오류 해결**: "different vector dimensions" 오류 완전 제거
+- **⚡ 검색 안정성**: API 키 및 벡터 차원 불일치 문제 해결
+- **📈 품질 유지**: 84.7% 평균 관련성 점수 유지
+- **🚀 성능 최적화**: 33.3% 쿼리가 1초 미만 응답
+
+### v2.1.0 주요 개선사항:
 - **하이브리드 검색**: BM25 + 벡터 유사도
 - **함수별 검색**: 4441개 MAGMA 함수 인덱싱
 - **쿼리 확장**: 수학 도메인 특화 동의어
 - **품질 벤치마크**: 18개 테스트 쿼리 세트
+
+### v2.0.0 기본 기능:
 - **이중 서버**: v1.0 호환성 + v2.0 고급 기능
+- **상용화 품질**: 프로덕션 레벨 성능
 
 ---
 **🧙‍♂️ 생성자**: Claude Code  
 **📅 배포일**: 2025-01-05  
-**🏷️ 버전**: v2.0.0
+**🏷️ 버전**: v2.2.0

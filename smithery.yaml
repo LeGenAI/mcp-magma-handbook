@@ -1,31 +1,26 @@
-name: mcp-magma-handbook
-version: 1.0.1
-description: MCP server providing AI access to MAGMA computational algebra system documentation
-
-mcp:
-  server:
-    command: npx
-    args: [mcp-magma-handbook]
-    env:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_KEY: ${SUPABASE_KEY}
-
-tools:
-  - name: search_magma
-    description: Search MAGMA handbook for specific topics, functions, or algorithms
-  - name: get_magma_example
-    description: Get MAGMA code examples for specific mathematical topics
-  - name: explain_magma_code
-    description: Explain what a piece of MAGMA code does
-
-categories:
-  - mathematics
-  - algebra
-  - documentation
-
+runtime: typescript
+name: "MAGMA Handbook Advanced"
+description: "Advanced MCP server providing AI access to MAGMA computational algebra system documentation with hybrid search capabilities"
+version: "2.0.0"
+author: "Baek Jae Hyun"
+homepage: "https://github.com/LeGenAI/mcp-magma-handbook"
 tags:
-  - magma
-  - computational-algebra
   - mathematics
-  - handbook
+  - computational-algebra
+  - magma
+  - search
+  - ai-assistant
+config:
+  - name: supabaseUrl
+    description: "Supabase project URL for the MAGMA knowledge base"
+    required: true
+  - name: supabaseKey
+    description: "Supabase anon key for database access"
+    required: true
+  - name: openaiApiKey
+    description: "OpenAI API key for embeddings generation"
+    required: true
+  - name: debug
+    description: "Enable debug logging"
+    required: false
+    default: false
